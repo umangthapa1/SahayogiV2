@@ -1,0 +1,615 @@
+<!doctype html>
+<html class="dark" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>S.A.H.A.Y.O.G.I. Voice Assistant</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#8AB4F8",
+              "on-primary": "#002b55",
+              background: "#0f1116",
+              surface: "#171a22",
+              "surface-variant": "#232734",
+              outline: "#3b4258",
+              "on-surface": "#e5e8f1",
+              "on-surface-variant": "#b7bfd3",
+            },
+            fontFamily: {
+              display: ["Inter", "sans-serif"],
+            },
+            boxShadow: {
+              soft: "0 4px 20px rgba(0, 0, 0, 0.25)",
+              "glow-soft": "0 0 40px -10px rgba(138, 180, 248, 0.25)",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      .glass-surface {
+        background: rgba(23, 26, 34, 0.65);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .orb-animation {
+        animation: breathe 4s ease-in-out infinite;
+      }
+      @keyframes breathe {
+        0%,
+        100% {
+          transform: scale(1);
+          box-shadow: 0 0 30px -5px rgba(138, 180, 248, 0.35);
+          opacity: 0.92;
+        }
+        50% {
+          transform: scale(1.05);
+          box-shadow: 0 0 54px -4px rgba(138, 180, 248, 0.6);
+          opacity: 1;
+        }
+      }
+      .wave-bar {
+        width: 4px;
+        background: #8ab4f8;
+        border-radius: 99px;
+        animation: sound-wave 1.2s ease-in-out infinite;
+      }
+      @keyframes sound-wave {
+        0%,
+        100% {
+          height: 10px;
+          opacity: 0.5;
+        }
+        50% {
+          height: 24px;
+          opacity: 1;
+        }
+      }
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
+      .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      .icon {
+        width: 1.1rem;
+        height: 1.1rem;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        flex-shrink: 0;
+      }
+      .icon-sm {
+        width: 0.95rem;
+        height: 0.95rem;
+      }
+      .icon-lg {
+        width: 1.4rem;
+        height: 1.4rem;
+      }
+      .nav-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.72rem 1rem;
+        border-radius: 999px;
+        color: #b7bfd3;
+        transition: 180ms ease;
+      }
+      .nav-btn:hover {
+        color: #e5e8f1;
+        background: rgba(255, 255, 255, 0.06);
+      }
+      .nav-btn.active {
+        color: #8ab4f8;
+        background: rgba(138, 180, 248, 0.16);
+      }
+      .panel-hidden {
+        display: none;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.35rem 0.7rem;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.03);
+        color: #c5ccde;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body
+    class="bg-background text-on-surface font-display min-h-screen overflow-hidden selection:bg-primary/30"
+  >
+    <div class="flex h-screen w-full">
+      <aside class="w-72 h-full flex flex-col bg-surface border-r border-white/5 z-20">
+        <div class="p-6">
+          <div class="flex items-center gap-3 mb-8">
+            <div class="size-10 rounded-full bg-primary/12 flex items-center justify-center text-primary">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="7" y="3" width="10" height="5" rx="2"></rect>
+                <rect x="4" y="8" width="16" height="11" rx="4"></rect>
+                <circle cx="9" cy="13" r="1"></circle>
+                <circle cx="15" cy="13" r="1"></circle>
+                <path d="M9 17h6"></path>
+              </svg>
+            </div>
+            <div class="flex flex-col">
+              <h1 class="text-on-surface text-base font-semibold tracking-wide">S.A.H.A.Y.O.G.I.</h1>
+              <p class="text-on-surface-variant text-[10px] font-medium uppercase tracking-widest">Assistant</p>
+            </div>
+          </div>
+
+          <nav class="flex flex-col gap-1.5">
+            <button id="navHistory" data-section="history" class="nav-btn active" type="button">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 12a9 9 0 1 0 3-6.7"></path>
+                <path d="M3 3v4h4"></path>
+                <path d="M12 7v6l4 2"></path>
+              </svg>
+              <span class="font-medium text-sm">History</span>
+            </button>
+
+            <button id="navSettings" data-section="settings" class="nav-btn" type="button">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-.4-1.1 1.7 1.7 0 0 0-1-.6 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H2.8a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.1-.4 1.7 1.7 0 0 0 .6-1 1.7 1.7 0 0 0-.34-1.87L4.2 6.3a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V2.8a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 .4 1.1 1.7 1.7 0 0 0 1 .6 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.26.3.47.65.6 1 .1.32.15.66.15 1s-.05.68-.15 1c-.13.35-.34.7-.6 1Z"></path>
+              </svg>
+              <span class="font-medium text-sm">Settings</span>
+            </button>
+
+            <button id="navModules" data-section="modules" class="nav-btn" type="button">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="3" width="8" height="8" rx="2"></rect>
+                <rect x="13" y="3" width="8" height="8" rx="2"></rect>
+                <rect x="3" y="13" width="8" height="8" rx="2"></rect>
+                <rect x="13" y="13" width="8" height="8" rx="2"></rect>
+              </svg>
+              <span class="font-medium text-sm">Modules</span>
+            </button>
+
+            <button id="navConsole" data-section="console" class="nav-btn" type="button">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"></path>
+                <path d="M7 10l3 2-3 2"></path>
+                <path d="M12.5 14h4"></path>
+              </svg>
+              <span class="font-medium text-sm">Console</span>
+            </button>
+          </nav>
+
+          <div class="mt-6 border border-white/8 bg-surface-variant/35 rounded-2xl p-3">
+            <div class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-2">Language</div>
+            <select id="languageSwitcher" class="w-full bg-surface text-on-surface text-sm rounded-xl border-white/10 focus:border-primary/50 focus:ring-primary/20">
+              <option value="en">English</option>
+              <option value="ne">नेपाली</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mt-auto p-4 border-t border-white/5">
+          <div class="flex items-center gap-3 p-2 rounded-full hover:bg-white/5 transition-colors cursor-pointer">
+            <div class="size-9 rounded-full bg-primary/15 grid place-items-center border border-primary/25 text-primary text-xs font-semibold">
+              AU
+            </div>
+            <div class="flex flex-col overflow-hidden">
+              <p class="text-sm font-medium text-on-surface truncate">Admin User</p>
+              <div class="flex items-center gap-1.5">
+                <div class="size-1.5 rounded-full bg-green-500"></div>
+                <p class="text-xs text-on-surface-variant truncate">Online</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <main class="flex-1 flex flex-col h-full min-w-0 bg-background relative">
+        <header class="h-16 flex items-center justify-between px-8 z-20">
+          <div class="flex items-center gap-2 bg-surface-variant/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/5">
+            <div id="statusDot" class="size-2 rounded-full bg-primary animate-pulse"></div>
+            <span id="statusText" class="text-xs font-medium text-primary tracking-wide">Ready</span>
+          </div>
+          <div id="activeLangChip" class="chip">EN</div>
+        </header>
+
+        <div class="flex-1 flex flex-col items-center justify-center p-8 relative overflow-hidden z-10">
+          <div class="flex flex-col items-center mb-12 relative">
+            <div class="size-32 rounded-full bg-gradient-to-b from-primary to-blue-600 orb-animation flex items-center justify-center relative">
+              <div class="absolute inset-0 rounded-full bg-primary blur-2xl opacity-20"></div>
+              <svg class="icon icon-lg text-white" style="width:2.3rem;height:2.3rem" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="9" y="3" width="6" height="11" rx="3"></rect>
+                <path d="M6 11a6 6 0 0 0 12 0"></path>
+                <path d="M12 17v4"></path>
+                <path d="M8 21h8"></path>
+              </svg>
+            </div>
+            <div class="mt-8 flex items-center justify-center gap-1 h-6" aria-hidden="true">
+              <div class="wave-bar" style="animation-delay:0s"></div>
+              <div class="wave-bar" style="animation-delay:0.1s"></div>
+              <div class="wave-bar" style="animation-delay:0.2s"></div>
+              <div class="wave-bar" style="animation-delay:0.3s"></div>
+              <div class="wave-bar" style="animation-delay:0.2s"></div>
+              <div class="wave-bar" style="animation-delay:0.1s"></div>
+              <div class="wave-bar" style="animation-delay:0s"></div>
+            </div>
+            <h2 id="promptText" class="mt-6 text-xl font-medium text-on-surface tracking-wide">Hi, how can I help you?</h2>
+          </div>
+
+          <div class="w-full max-w-3xl glass-surface rounded-3xl flex flex-col overflow-hidden shadow-soft hover:shadow-glow-soft transition-all">
+            <div class="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-black/20">
+              <div class="flex items-center gap-3">
+                <svg class="icon text-on-surface-variant" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"></path>
+                  <path d="M7 10l3 2-3 2"></path>
+                  <path d="M12.5 14h4"></path>
+                </svg>
+                <span id="panelTitle" class="text-xs font-medium text-on-surface-variant tracking-wide uppercase">System Log</span>
+              </div>
+            </div>
+
+            <section id="panelHistory" class="h-48 overflow-y-auto p-6 font-mono text-sm scrollbar-hide flex flex-col justify-end space-y-2"></section>
+
+            <section id="panelSettings" class="panel-hidden h-48 overflow-y-auto p-6 text-sm text-on-surface-variant">
+              <div class="flex flex-col gap-3">
+                <div class="text-on-surface text-sm font-medium">Assistant Settings</div>
+                <label class="text-xs uppercase tracking-widest">Language</label>
+                <select id="languageSwitcherPanel" class="w-full max-w-xs bg-surface text-on-surface text-sm rounded-xl border-white/10 focus:border-primary/50 focus:ring-primary/20">
+                  <option value="en">English</option>
+                  <option value="ne">नेपाली</option>
+                </select>
+                <p id="settingsHint" class="text-xs leading-relaxed">Switches recognition and response language for voice and chat.</p>
+              </div>
+            </section>
+
+            <section id="panelModules" class="panel-hidden h-48 overflow-y-auto p-6 text-sm text-on-surface-variant">
+              <div class="text-on-surface text-sm font-medium mb-3">Loaded Modules</div>
+              <div class="flex flex-wrap gap-2">
+                <span class="chip">Weather</span>
+                <span class="chip">Music</span>
+                <span class="chip">System Control</span>
+                <span class="chip">Code Generation</span>
+                <span class="chip">Local Chat</span>
+              </div>
+              <p class="text-xs mt-4">Use command input to trigger modules. Example: "open youtube" or "generate python code".</p>
+            </section>
+
+            <div class="p-4 bg-surface-variant/30 border-t border-white/5">
+              <label class="flex items-center gap-4 bg-surface rounded-full px-5 py-3 border border-transparent focus-within:border-primary/50 focus-within:shadow-glow-soft transition-all">
+                <svg class="icon text-primary" viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="9" y="3" width="6" height="11" rx="3"></rect>
+                  <path d="M6 11a6 6 0 0 0 12 0"></path>
+                  <path d="M12 17v4"></path>
+                </svg>
+                <input id="commandInput" class="bg-transparent border-none text-on-surface placeholder-on-surface-variant focus:ring-0 w-full text-sm font-medium" placeholder="Type a command..." type="text" />
+                <button id="sendCommand" type="button" class="size-8 bg-primary rounded-full text-on-primary flex items-center justify-center hover:bg-blue-300 transition-colors shadow-lg shadow-primary/20">
+                  <svg class="icon text-on-primary" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 5v14"></path>
+                    <path d="m6 11 6-6 6 6"></path>
+                  </svg>
+                </button>
+              </label>
+            </div>
+          </div>
+
+          <div class="mt-7 flex gap-3">
+            <div class="chip">
+              <svg class="icon icon-sm text-yellow-400" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="4"></circle>
+                <path d="M12 2v2"></path><path d="M12 20v2"></path><path d="M4.9 4.9l1.4 1.4"></path><path d="M17.7 17.7l1.4 1.4"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="M4.9 19.1l1.4-1.4"></path><path d="M17.7 6.3l1.4-1.4"></path>
+              </svg>
+              <span>Kathmandu, 24°C</span>
+            </div>
+            <div class="chip">
+              <svg class="icon icon-sm text-green-400" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14h4v6H4zM10 10h4v10h-4zM16 6h4v14h-4z"></path></svg>
+              <span>CPU: 12%</span>
+            </div>
+            <div class="chip">
+              <svg class="icon icon-sm text-blue-400" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 8a16 16 0 0 1 20 0"></path><path d="M5 12a11 11 0 0 1 14 0"></path><path d="M8.5 16a6 6 0 0 1 7 0"></path><circle cx="12" cy="20" r="1"></circle></svg>
+              <span>500 Mbps</span>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      (function () {
+        const languageText = {
+          en: {
+            status: {
+              neutral: "Ready",
+              listening: "Listening...",
+              recognizing: "Recognizing...",
+              speaking: "Speaking...",
+              searching: "Searching...",
+            },
+            prompt: {
+              neutral: "Hi, how can I help you?",
+              listening: "I am listening...",
+              recognizing: "Understanding your request...",
+              speaking: "Working on it...",
+              searching: "Looking it up...",
+            },
+            ui: {
+              panelHistory: "System Log",
+              panelSettings: "Assistant Settings",
+              panelModules: "Modules",
+              placeholder: "Type a command...",
+              settingsHint: "Switches recognition and response language for voice and chat.",
+              bridgeReady: "UI bridge connected.",
+              bridgeMissing: "Backend bridge is not connected yet.",
+            },
+          },
+          ne: {
+            status: {
+              neutral: "तयार",
+              listening: "सुनिरहेको छु...",
+              recognizing: "बुझ्दै छु...",
+              speaking: "बोल्दै छु...",
+              searching: "खोज्दै छु...",
+            },
+            prompt: {
+              neutral: "नमस्ते, म कसरी मद्दत गर्न सक्छु?",
+              listening: "म सुन्दै छु...",
+              recognizing: "तपाईंको अनुरोध बुझ्दै छु...",
+              speaking: "काम गर्दै छु...",
+              searching: "खोज्दै छु...",
+            },
+            ui: {
+              panelHistory: "सिस्टम लग",
+              panelSettings: "सेटिङ",
+              panelModules: "मोड्युलहरू",
+              placeholder: "आदेश टाइप गर्नुहोस्...",
+              settingsHint: "भ्वाइस र च्याट दुवैको भाषा परिवर्तन हुन्छ।",
+              bridgeReady: "UI bridge जोडियो।",
+              bridgeMissing: "Backend bridge अझै जोडिएको छैन।",
+            },
+          },
+        };
+
+        const sectionTitle = {
+          history: (lang) => languageText[lang].ui.panelHistory,
+          settings: (lang) => languageText[lang].ui.panelSettings,
+          modules: (lang) => languageText[lang].ui.panelModules,
+        };
+
+        let bridge = null;
+        let bridgeBootstrapped = false;
+        let currentSection = "history";
+        let currentLanguage = "en";
+
+        function getEl(id) {
+          return document.getElementById(id);
+        }
+
+        function setSection(section) {
+          if (section === "console") {
+            const input = getEl("commandInput");
+            if (input) {
+              input.focus();
+            }
+            section = "history";
+          }
+          currentSection = section;
+
+          const historyPanel = getEl("panelHistory");
+          const settingsPanel = getEl("panelSettings");
+          const modulesPanel = getEl("panelModules");
+
+          historyPanel.classList.toggle("panel-hidden", section !== "history");
+          settingsPanel.classList.toggle("panel-hidden", section !== "settings");
+          modulesPanel.classList.toggle("panel-hidden", section !== "modules");
+
+          const activeButton = {
+            history: "navHistory",
+            settings: "navSettings",
+            modules: "navModules",
+          }[section] || "navHistory";
+
+          ["navHistory", "navSettings", "navModules", "navConsole"].forEach((id) => {
+            const el = getEl(id);
+            if (!el) return;
+            el.classList.toggle("active", id === activeButton);
+          });
+
+          const title = getEl("panelTitle");
+          if (title) {
+            title.textContent = sectionTitle[section](currentLanguage);
+          }
+        }
+
+        function appendChatLine(text, role) {
+          const container = getEl("panelHistory");
+          if (!container || !text) {
+            return;
+          }
+
+          const message = String(text);
+          const item = document.createElement("div");
+
+          if (role === "system") {
+            item.className = "text-on-surface-variant opacity-70 text-xs";
+            const stamp = new Date().toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+              hour12: false,
+            });
+            item.textContent = stamp + " " + message;
+          } else {
+            item.className =
+              role === "user"
+                ? "flex gap-3 mt-2"
+                : "flex gap-3 bg-surface-variant/30 p-3 rounded-lg border-l-2 border-primary";
+
+            const who = document.createElement("div");
+            who.className = "text-primary font-bold shrink-0";
+            who.textContent = role === "user" ? "User" : "Assistant";
+
+            const content = document.createElement("div");
+            content.className = role === "user" ? "text-on-surface" : "text-on-surface-variant";
+            content.textContent = message;
+
+            item.appendChild(who);
+            item.appendChild(content);
+          }
+
+          container.appendChild(item);
+          while (container.children.length > 140) {
+            container.removeChild(container.firstElementChild);
+          }
+          container.scrollTop = container.scrollHeight;
+        }
+
+        function applyLanguageTexts() {
+          const textSet = languageText[currentLanguage] || languageText.en;
+          const input = getEl("commandInput");
+          const hint = getEl("settingsHint");
+          const chip = getEl("activeLangChip");
+
+          if (input) input.placeholder = textSet.ui.placeholder;
+          if (hint) hint.textContent = textSet.ui.settingsHint;
+          if (chip) chip.textContent = currentLanguage.toUpperCase();
+
+          const switcherA = getEl("languageSwitcher");
+          const switcherB = getEl("languageSwitcherPanel");
+          if (switcherA && switcherA.value !== currentLanguage) switcherA.value = currentLanguage;
+          if (switcherB && switcherB.value !== currentLanguage) switcherB.value = currentLanguage;
+
+          window.sahayogiSetState(window.__sahayogiState || "neutral");
+          setSection(currentSection === "console" ? "history" : currentSection);
+        }
+
+        function submitCommand() {
+          const input = getEl("commandInput");
+          if (!input) return;
+
+          const command = input.value.trim();
+          if (!command) return;
+
+          input.value = "";
+          if (bridge && typeof bridge.submitCommand === "function") {
+            bridge.submitCommand(command);
+            return;
+          }
+
+          appendChatLine((languageText[currentLanguage] || languageText.en).ui.bridgeMissing, "system");
+        }
+
+        function sendLanguageToBackend(lang) {
+          if (bridge && typeof bridge.setLanguage === "function") {
+            bridge.setLanguage(lang);
+          }
+        }
+
+        function handleLanguageSelect(event) {
+          const lang = (event.target.value || "en").toLowerCase();
+          currentLanguage = lang === "ne" ? "ne" : "en";
+          applyLanguageTexts();
+          sendLanguageToBackend(currentLanguage);
+        }
+
+        function initBridge() {
+          if (bridgeBootstrapped) return;
+          if (typeof QWebChannel === "undefined" || !window.qt || !qt.webChannelTransport) return;
+
+          bridgeBootstrapped = true;
+          new QWebChannel(qt.webChannelTransport, function (channel) {
+            bridge = channel.objects.sahayogiBridge || null;
+          });
+        }
+
+        window.sahayogiSyncLanguage = function (languageCode) {
+          const lang = (languageCode || "en").toLowerCase();
+          currentLanguage = lang === "ne" ? "ne" : "en";
+          applyLanguageTexts();
+        };
+
+        window.sahayogiSetState = function (state) {
+          const textSet = languageText[currentLanguage] || languageText.en;
+          const current = textSet.status[state] ? state : "neutral";
+          window.__sahayogiState = current;
+
+          const status = getEl("statusText");
+          const prompt = getEl("promptText");
+          if (status) status.textContent = textSet.status[current];
+          if (prompt) prompt.textContent = textSet.prompt[current];
+        };
+
+        window.sahayogiAppendLog = function (text, role) {
+          appendChatLine(text, role || "assistant");
+        };
+
+        window.sahayogiClearDemoLogs = function () {
+          const container = getEl("panelHistory");
+          if (container) {
+            container.innerHTML = "";
+          }
+        };
+
+        window.sahayogiMarkReady = function () {
+          window.sahayogiSetState("neutral");
+          const textSet = languageText[currentLanguage] || languageText.en;
+          appendChatLine(textSet.ui.bridgeReady, "system");
+        };
+
+        document.addEventListener("DOMContentLoaded", function () {
+          initBridge();
+
+          const sendButton = getEl("sendCommand");
+          const commandInput = getEl("commandInput");
+          const languageSwitcher = getEl("languageSwitcher");
+          const languageSwitcherPanel = getEl("languageSwitcherPanel");
+
+          if (sendButton) sendButton.addEventListener("click", submitCommand);
+          if (commandInput) {
+            commandInput.addEventListener("keydown", function (event) {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                submitCommand();
+              }
+            });
+          }
+
+          if (languageSwitcher) languageSwitcher.addEventListener("change", handleLanguageSelect);
+          if (languageSwitcherPanel) languageSwitcherPanel.addEventListener("change", handleLanguageSelect);
+
+          const navMap = {
+            navHistory: "history",
+            navSettings: "settings",
+            navModules: "modules",
+            navConsole: "console",
+          };
+
+          Object.keys(navMap).forEach((id) => {
+            const button = getEl(id);
+            if (!button) return;
+            button.addEventListener("click", function () {
+              setSection(navMap[id]);
+            });
+          });
+
+          window.sahayogiSetState("neutral");
+          setSection("history");
+          applyLanguageTexts();
+        });
+      })();
+    </script>
+  </body>
+</html>

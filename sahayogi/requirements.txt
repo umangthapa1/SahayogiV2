@@ -1,0 +1,8 @@
+PyQt5
+PyQtWebEngine
+speech_recognition
+requests
+beautifulsoup4
+pywhatkit
+pyjokes
+ollama
