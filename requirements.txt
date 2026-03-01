@@ -1,6 +1,6 @@
 PyQt5
 PyQtWebEngine
-speech_recognition
+speechrecognition
 requests
 beautifulsoup4
 pywhatkit
